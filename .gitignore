@@ -1,0 +1,67 @@
+############################
+# ОС и редакторы
+############################
+.DS_Store
+Thumbs.db
+
+# VS Code (если не хочешь делиться launch.json/settings.json)
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+############################
+# Сборка и артефакты
+############################
+/target/
+/bin/
+/build/
+*.class
+*.log
+
+# Упакованные файлы (не держим в репо)
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+# НО оставляем jar Maven Wrapper'а, если он есть
+!**/maven-wrapper.jar
+!/mvnw
+!/mvnw.cmd
+!/.mvn/wrapper/**
+
+############################
+# Отчёты, покрытия, тесты
+############################
+.surefire-*
+.failsafe-*
+jacoco.exec
+/coverage/
+target/site/
+.sonar/
+
+############################
+# Локальные настройки/секреты
+############################
+.env
+*.env
+*.local
+*.properties.local
+*.orig
+*.rej
+
+############################
+# Дампы/краши JVM
+############################
+hs_err_pid*
+replay_pid*
+*.hprof
