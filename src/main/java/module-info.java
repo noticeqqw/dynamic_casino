@@ -1,5 +1,7 @@
 module dynamic.casino {
     requires javafx.controls;
-    requires javafx.graphics;
+    requires javafx.fxml;
+
+    opens dynamic.casino to javafx.fxml;
     exports dynamic.casino;
 }
