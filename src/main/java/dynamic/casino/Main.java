@@ -14,7 +14,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/casino.fxml"));
         Parent root = loader.load();
-        primaryStage.setTitle("Игровой автомат казино");
+        primaryStage.setTitle("Игровой автомат казино 777");
         primaryStage.setScene(new Scene(root, 1200, 700));
         primaryStage.show();
     }
