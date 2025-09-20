@@ -23,6 +23,9 @@
                         <Label text="Количество колонок:" />
                         <TextField fx:id="columnsField" promptText="3" text="3" />
 
+                        <Label text="Количество фото:" />
+                        <TextField fx:id="symbolsToUseField" promptText="0" text="0" />
+
                         <Button fx:id="applySettingsButton" mnemonicParsing="false" text="Применить настройки" />
 
                         <Separator />

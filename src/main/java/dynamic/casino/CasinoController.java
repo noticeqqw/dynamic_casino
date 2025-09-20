@@ -28,6 +28,9 @@ public class CasinoController {
     private TextField columnsField;
 
     @FXML
+    private TextField symbolsToUseField; // Новое поле для выбора количества символов
+
+    @FXML
     private Button startButton;
 
     @FXML
@@ -52,6 +55,7 @@ public class CasinoController {
     private final IntegerProperty columnsProperty = new SimpleIntegerProperty(3);
     private final IntegerProperty rowsProperty = new SimpleIntegerProperty(1);
     private final IntegerProperty symbolCountProperty = new SimpleIntegerProperty(0);
+    private final IntegerProperty symbolsToUseProperty = new SimpleIntegerProperty(0); // Новое свойство
     private final BooleanProperty isSpinningProperty = new SimpleBooleanProperty(false);
 
     private List<List<ImageView>> reels;
@@ -65,6 +69,7 @@ public class CasinoController {
 
     // Список изображений для использования
     private List<Image> gameImages = new ArrayList<>();
+    private List<Image> usedImages = new ArrayList<>(); // Новый список для используемых изображений
     private String imagesDirectory = "images"; // Директория с изображениями
 
     // Состояние автомата
@@ -82,40 +87,62 @@ public class CasinoController {
 
     private void setupSettingsPanel() {
         columnsField.setText(String.valueOf(columnsProperty.get()));
+        if (symbolsToUseField != null) {
+            symbolsToUseField.setText("0"); // По умолчанию использовать все изображения
+        }
     }
 
     private void setupBindings() {
         // Биндинги для автоматического обновления UI
         columnsProperty.addListener((obs, oldVal, newVal) -> {
-            columnsField.setText(String.valueOf(newVal.intValue()));
+            if (columnsField != null) {
+                columnsField.setText(String.valueOf(newVal.intValue()));
+            }
             updateRowsBasedOnColumns(newVal.intValue());
             updateProbability();
         });
 
         symbolCountProperty.addListener((obs, oldVal, newVal) -> updateProbability());
         rowsProperty.addListener((obs, oldVal, newVal) -> updateProbability());
-        isSpinningProperty.addListener((obs, oldVal, newVal) -> startButton.setDisable(newVal.booleanValue()));
+        isSpinningProperty.addListener((obs, oldVal, newVal) -> {
+            if (startButton != null) {
+                startButton.setDisable(newVal.booleanValue());
+            }
+        });
+
+        // Добавляем слушатель для symbolsToUseProperty
+        symbolsToUseProperty.addListener((obs, oldVal, newVal) -> updateUsedImages());
     }
 
     private void setupEventHandlers() {
-        applySettingsButton.setOnAction(e -> applySettings());
-        startButton.setOnAction(e -> executeCommand(new StartSpinCommand()));
-        loadImagesButton.setOnAction(e -> loadImagesFromDirectory());
+        if (applySettingsButton != null) {
+            applySettingsButton.setOnAction(e -> applySettings());
+        }
+        if (startButton != null) {
+            startButton.setOnAction(e -> executeCommand(new StartSpinCommand()));
+        }
+        if (loadImagesButton != null) {
+            loadImagesButton.setOnAction(e -> loadImagesFromDirectory());
+        }
     }
 
     private void applyCasinoStyle() {
         // Основной фон казино
-        mainContainer.setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #8B0000, #dc143c);");
+        if (mainContainer != null) {
+            mainContainer.setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #8B0000, #dc143c);");
+        }
 
         // Панель настроек в стиле казино
-        settingsPanel.setStyle(
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #DAA520, #B8860B);" +
-            "-fx-padding: 20;" +
-            "-fx-border-color: #FFD700;" +
-            "-fx-border-width: 3;" +
-            "-fx-border-radius: 10;" +
-            "-fx-background-radius: 10;"
-        );
+        if (settingsPanel != null) {
+            settingsPanel.setStyle(
+                "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #DAA520, #B8860B);" +
+                "-fx-padding: 20;" +
+                "-fx-border-color: #FFD700;" +
+                "-fx-border-width: 3;" +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;"
+            );
+        }
 
         // Стиль для кнопок казино
         String buttonStyle =
@@ -128,53 +155,71 @@ public class CasinoController {
             "-fx-border-radius: 5;" +
             "-fx-background-radius: 5;";
 
-        applySettingsButton.setStyle(buttonStyle);
-        loadImagesButton.setStyle(buttonStyle);
-        startButton.setStyle(
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FF4500, #DC143C);" +
-            "-fx-text-fill: white;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 16px;" +
-            "-fx-border-color: #8B0000;" +
-            "-fx-border-width: 2;" +
-            "-fx-border-radius: 5;" +
-            "-fx-background-radius: 5;"
-        );
+        if (applySettingsButton != null) {
+            applySettingsButton.setStyle(buttonStyle);
+        }
+        if (loadImagesButton != null) {
+            loadImagesButton.setStyle(buttonStyle);
+        }
+        if (startButton != null) {
+            startButton.setStyle(
+                "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FF4500, #DC143C);" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 16px;" +
+                "-fx-border-color: #8B0000;" +
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 5;" +
+                "-fx-background-radius: 5;"
+            );
+        }
 
         // Стиль для текстовых полей
-        columnsField.setStyle(
+        String textFieldStyle =
             "-fx-background-color: white;" +
             "-fx-border-color: #DAA520;" +
             "-fx-border-width: 2;" +
             "-fx-font-weight: bold;" +
-            "-fx-font-size: 14px;"
-        );
+            "-fx-font-size: 14px;";
+
+        if (columnsField != null) {
+            columnsField.setStyle(textFieldStyle);
+        }
+        if (symbolsToUseField != null) {
+            symbolsToUseField.setStyle(textFieldStyle);
+        }
 
         // Стиль для меток
-        statusLabel.setStyle(
-            "-fx-text-fill: #000080;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 12px;" +
-            "-fx-background-color: rgba(255, 255, 255, 0.7);" +
-            "-fx-padding: 5;" +
-            "-fx-background-radius: 5;"
-        );
+        if (statusLabel != null) {
+            statusLabel.setStyle(
+                "-fx-text-fill: #000080;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 12px;" +
+                "-fx-background-color: rgba(255, 255, 255, 0.7);" +
+                "-fx-padding: 5;" +
+                "-fx-background-radius: 5;"
+            );
+        }
 
-        probabilityLabel.setStyle(
-            "-fx-text-fill: #000080;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 14px;" +
-            "-fx-background-color: rgba(255, 255, 255, 0.7);" +
-            "-fx-padding: 5;" +
-            "-fx-background-radius: 5;"
-        );
+        if (probabilityLabel != null) {
+            probabilityLabel.setStyle(
+                "-fx-text-fill: #000080;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 14px;" +
+                "-fx-background-color: rgba(255, 255, 255, 0.7);" +
+                "-fx-padding: 5;" +
+                "-fx-background-radius: 5;"
+            );
+        }
 
-        resultLabel.setStyle(
-            "-fx-text-fill: #FFD700;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 16px;" +
-            "-fx-effect: dropshadow(gaussian, black, 3, 0, 1, 1);"
-        );
+        if (resultLabel != null) {
+            resultLabel.setStyle(
+                "-fx-text-fill: #FFD700;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 16px;" +
+                "-fx-effect: dropshadow(gaussian, black, 3, 0, 1, 1);"
+            );
+        }
     }
 
     private void loadDefaultImages() {
@@ -184,7 +229,9 @@ public class CasinoController {
         File imagesDir = new File(imagesDirectory);
         if (!imagesDir.exists()) {
             imagesDir.mkdirs();
-            statusLabel.setText("Создана директория 'images'. Поместите сюда изображения и нажмите 'Загрузить изображения'");
+            if (statusLabel != null) {
+                statusLabel.setText("Создана директория 'images'. Поместите сюда изображения и нажмите 'Загрузить изображения'");
+            }
             return;
         }
 
@@ -208,7 +255,9 @@ public class CasinoController {
 
         if (imageFiles == null || imageFiles.length == 0) {
             showAlert("Предупреждение", "В директории 'images' не найдено изображений");
-            statusLabel.setText("Поместите изображения в папку 'images' и нажмите 'Загрузить изображения'");
+            if (statusLabel != null) {
+                statusLabel.setText("Поместите изображения в папку 'images' и нажмите 'Загрузить изображения'");
+            }
             return;
         }
 
@@ -226,26 +275,52 @@ public class CasinoController {
 
         if (gameImages.isEmpty()) {
             showAlert("Ошибка", "Не удалось загрузить ни одного изображения");
-            statusLabel.setText("Ошибка загрузки изображений");
+            if (statusLabel != null) {
+                statusLabel.setText("Ошибка загрузки изображений");
+            }
         } else {
             symbolCountProperty.set(gameImages.size());
-            statusLabel.setText("Загружено изображений: " + gameImages.size());
+            updateUsedImages(); // Обновляем список используемых изображений
+            if (statusLabel != null) {
+                statusLabel.setText("Загружено изображений: " + gameImages.size());
+            }
             createGameArea(); // Пересоздаем игровую область с новыми изображениями
         }
+    }
+
+    private void updateUsedImages() {
+        int symbolsToUse = symbolsToUseProperty.get();
+
+        if (symbolsToUse <= 0 || symbolsToUse >= gameImages.size()) {
+            // Использовать все изображения
+            usedImages = new ArrayList<>(gameImages);
+        } else {
+            // Использовать только указанное количество изображений
+            usedImages = new ArrayList<>(gameImages.subList(0, Math.min(symbolsToUse, gameImages.size())));
+        }
+
+        // Обновляем свойство количества символов
+        symbolCountProperty.set(usedImages.size());
     }
 
     private void applySettings() {
         try {
             int newColumns = Integer.parseInt(columnsField.getText());
+            int symbolsToUse = 0;
+
+            if (symbolsToUseField != null && !symbolsToUseField.getText().isEmpty()) {
+                symbolsToUse = Integer.parseInt(symbolsToUseField.getText());
+            }
 
             if (newColumns > 0 && newColumns <= 10) {
                 columnsProperty.set(newColumns);
+                symbolsToUseProperty.set(symbolsToUse);
                 createGameArea();
             } else {
                 showAlert("Ошибка", "Количество колонок должно быть от 1 до 10");
             }
         } catch (NumberFormatException e) {
-            showAlert("Ошибка", "Введите корректное числовое значение");
+            showAlert("Ошибка", "Введите корректные числовые значения");
         }
     }
 
@@ -261,76 +336,82 @@ public class CasinoController {
             return; // Нельзя изменять игровое поле во время спина
         }
 
-        gameArea.getChildren().clear();
+        if (gameArea != null) {
+            gameArea.getChildren().clear();
+        }
         reels = new ArrayList<>();
         reelImages = new ArrayList<>();
 
-        if (gameImages.isEmpty()) {
-            Label noImagesLabel = new Label("Нет изображений для отображения.\nПоместите изображения в папку 'images' и нажмите 'Загрузить изображения'");
-            noImagesLabel.setAlignment(Pos.CENTER);
-            noImagesLabel.setStyle(
-                "-fx-text-alignment: center;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 16px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-color: rgba(0, 0, 0, 0.7);" +
-                "-fx-padding: 20;" +
-                "-fx-background-radius: 10;"
-            );
-            gameArea.getChildren().add(noImagesLabel);
+        if (usedImages.isEmpty()) {
+            if (gameArea != null) {
+                Label noImagesLabel = new Label("Нет изображений для отображения.\nПоместите изображения в папку 'images' и нажмите 'Загрузить изображения'");
+                noImagesLabel.setAlignment(Pos.CENTER);
+                noImagesLabel.setStyle(
+                    "-fx-text-alignment: center;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 16px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-color: rgba(0, 0, 0, 0.7);" +
+                    "-fx-padding: 20;" +
+                    "-fx-background-radius: 10;"
+                );
+                gameArea.getChildren().add(noImagesLabel);
+            }
             return;
         }
 
-        // Создаем контейнер для барабанов с адаптивной сеткой
-        GridPane reelsContainer = new GridPane();
-        reelsContainer.setAlignment(Pos.CENTER);
-        reelsContainer.setHgap(15);
-        reelsContainer.setVgap(15);
-        reelsContainer.setPadding(new Insets(30));
+        if (gameArea != null) {
+            // Создаем контейнер для барабанов с адаптивной сеткой
+            GridPane reelsContainer = new GridPane();
+            reelsContainer.setAlignment(Pos.CENTER);
+            reelsContainer.setHgap(15);
+            reelsContainer.setVgap(15);
+            reelsContainer.setPadding(new Insets(30));
 
-        // Стиль игрового поля казино
-        reelsContainer.setStyle(
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #006400, #008000);" +
-            "-fx-border-color: #FFD700;" +
-            "-fx-border-width: 5;" +
-            "-fx-border-radius: 15;" +
-            "-fx-background-radius: 15;" +
-            "-fx-effect: dropshadow(gaussian, black, 10, 0, 3, 3);"
-        );
+            // Стиль игрового поля казино
+            reelsContainer.setStyle(
+                "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #006400, #008000);" +
+                "-fx-border-color: #FFD700;" +
+                "-fx-border-width: 5;" +
+                "-fx-border-radius: 15;" +
+                "-fx-background-radius: 15;" +
+                "-fx-effect: dropshadow(gaussian, black, 10, 0, 3, 3);"
+            );
 
-        // Определяем количество рядов в зависимости от количества колонок
-        int totalColumns = columnsProperty.get();
-        int topRowColumns, bottomRowColumns;
+            // Определяем количество рядов в зависимости от количества колонок
+            int totalColumns = columnsProperty.get();
+            int topRowColumns, bottomRowColumns;
 
-        if (totalColumns <= 5) {
-            // Одна строка
-            topRowColumns = totalColumns;
-            bottomRowColumns = 0;
-        } else {
-            // Две строки
-            topRowColumns = (int) Math.ceil(totalColumns / 2.0);
-            bottomRowColumns = totalColumns - topRowColumns;
-        }
+            if (totalColumns <= 5) {
+                // Одна строка
+                topRowColumns = totalColumns;
+                bottomRowColumns = 0;
+            } else {
+                // Две строки
+                topRowColumns = (int) Math.ceil(totalColumns / 2.0);
+                bottomRowColumns = totalColumns - topRowColumns;
+            }
 
-        int columnIndex = 0;
+            int columnIndex = 0;
 
-        // Создаем верхний ряд
-        for (int col = 0; col < topRowColumns; col++) {
-            VBox column = createColumn(columnIndex);
-            reelsContainer.add(column, col, 0);
-            columnIndex++;
-        }
-
-        // Создаем нижний ряд (если нужно)
-        if (bottomRowColumns > 0) {
-            for (int col = 0; col < bottomRowColumns; col++) {
+            // Создаем верхний ряд
+            for (int col = 0; col < topRowColumns; col++) {
                 VBox column = createColumn(columnIndex);
-                reelsContainer.add(column, col, 1);
+                reelsContainer.add(column, col, 0);
                 columnIndex++;
             }
-        }
 
-        gameArea.getChildren().add(reelsContainer);
+            // Создаем нижний ряд (если нужно)
+            if (bottomRowColumns > 0) {
+                for (int col = 0; col < bottomRowColumns; col++) {
+                    VBox column = createColumn(columnIndex);
+                    reelsContainer.add(column, col, 1);
+                    columnIndex++;
+                }
+            }
+
+            gameArea.getChildren().add(reelsContainer);
+        }
         updateProbability();
     }
 
@@ -352,16 +433,18 @@ public class CasinoController {
 
         // Создаем ячейки в колонке (только одна строка)
         for (int row = 0; row < 1; row++) { // Фиксировано 1 строка в колонке
-            ImageView imageView = SymbolFactory.createSymbol(gameImages, rng);
+            ImageView imageView = SymbolFactory.createSymbol(usedImages, rng);
             imageView.setFitWidth(110);
             imageView.setFitHeight(110);
             imageView.setPreserveRatio(false);
             imageView.setSmooth(true);
 
             // Устанавливаем случайное изображение
-            Image randomImage = gameImages.get(rng.nextInt(gameImages.size()));
-            imageView.setImage(randomImage);
-            columnImages.add(randomImage);
+            if (!usedImages.isEmpty()) {
+                Image randomImage = usedImages.get(rng.nextInt(usedImages.size()));
+                imageView.setImage(randomImage);
+                columnImages.add(randomImage);
+            }
 
             column.getChildren().add(imageView);
             columnReels.add(imageView);
@@ -390,28 +473,32 @@ public class CasinoController {
 
         @Override
         public boolean canExecute(GameState currentState) {
-            return currentState == GameState.IDLE && !gameImages.isEmpty();
+            return currentState == GameState.IDLE && !usedImages.isEmpty();
         }
     }
 
     private void startSpin() {
-        if (currentState != GameState.IDLE || gameImages.isEmpty()) return;
+        if (currentState != GameState.IDLE || usedImages.isEmpty()) return;
 
         currentState = GameState.SPINNING;
         isSpinningProperty.set(true);
-        resultLabel.setText("");
+        if (resultLabel != null) {
+            resultLabel.setText("");
+        }
 
         // Добавляем эффект начала игры
-        startButton.setStyle(
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #808080, #696969);" +
-            "-fx-text-fill: white;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 16px;" +
-            "-fx-border-color: #2F4F4F;" +
-            "-fx-border-width: 2;" +
-            "-fx-border-radius: 5;" +
-            "-fx-background-radius: 5;"
-        );
+        if (startButton != null) {
+            startButton.setStyle(
+                "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #808080, #696969);" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 16px;" +
+                "-fx-border-color: #2F4F4F;" +
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 5;" +
+                "-fx-background-radius: 5;"
+            );
+        }
 
         // Запускаем анимацию для каждой колонки с разной задержкой
         for (int col = 0; col < columnsProperty.get(); col++) {
@@ -427,35 +514,40 @@ public class CasinoController {
             currentState = GameState.IDLE;
             isSpinningProperty.set(false);
             // Возвращаем стиль кнопки
-            startButton.setStyle(
-                "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FF4500, #DC143C);" +
-                "-fx-text-fill: white;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-size: 16px;" +
-                "-fx-border-color: #8B0000;" +
-                "-fx-border-width: 2;" +
-                "-fx-border-radius: 5;" +
-                "-fx-background-radius: 5;"
-            );
+            if (startButton != null) {
+                startButton.setStyle(
+                    "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FF4500, #DC143C);" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-font-size: 16px;" +
+                    "-fx-border-color: #8B0000;" +
+                    "-fx-border-width: 2;" +
+                    "-fx-border-radius: 5;" +
+                    "-fx-background-radius: 5;"
+                );
+            }
         }));
         checkResult.play();
     }
 
     private void spinColumn(int col) {
+        if (col >= reels.size() || col >= reelImages.size()) return;
+
         List<ImageView> columnReels = reels.get(col);
         List<Image> columnImages = reelImages.get(col);
 
         // Создаем анимацию смены изображений
         Timeline spinAnimation = new Timeline();
-        Random random = new Random();
 
         // Быстрая смена изображений
         for (int i = 0; i < 15; i++) {
             KeyFrame kf = new KeyFrame(Duration.millis(i * 80), e -> {
                 for (int row = 0; row < columnReels.size(); row++) {
-                    Image newImage = gameImages.get(rng.nextInt(gameImages.size()));
-                    columnReels.get(row).setImage(newImage);
-                    columnImages.set(row, newImage);
+                    if (!usedImages.isEmpty()) {
+                        Image newImage = usedImages.get(rng.nextInt(usedImages.size()));
+                        columnReels.get(row).setImage(newImage);
+                        columnImages.set(row, newImage);
+                    }
                 }
             });
             spinAnimation.getKeyFrames().add(kf);
@@ -465,9 +557,11 @@ public class CasinoController {
         for (int i = 0; i < 5; i++) {
             KeyFrame kf = new KeyFrame(Duration.millis(1200 + i * 150), e -> {
                 for (int row = 0; row < columnReels.size(); row++) {
-                    Image newImage = gameImages.get(rng.nextInt(gameImages.size()));
-                    columnReels.get(row).setImage(newImage);
-                    columnImages.set(row, newImage);
+                    if (!usedImages.isEmpty()) {
+                        Image newImage = usedImages.get(rng.nextInt(usedImages.size()));
+                        columnReels.get(row).setImage(newImage);
+                        columnImages.set(row, newImage);
+                    }
                 }
             });
             spinAnimation.getKeyFrames().add(kf);
@@ -477,50 +571,60 @@ public class CasinoController {
     }
 
     private void checkWin() {
-        if (columnsProperty.get() == 0 || gameImages.isEmpty()) return;
+        if (columnsProperty.get() == 0 || usedImages.isEmpty()) return;
 
         boolean isWin = true;
         Image firstImage = reelImages.get(0).get(0);
 
         // Проверяем все изображения на совпадение
+        outerLoop:
         for (int col = 0; col < columnsProperty.get(); col++) {
             for (int row = 0; row < 1; row++) { // Фиксировано 1 строка
-                if (!reelImages.get(col).get(row).getUrl().equals(firstImage.getUrl())) {
+                if (col < reelImages.size() && row < reelImages.get(col).size()) {
+                    Image currentImage = reelImages.get(col).get(row);
+                    if (!currentImage.getUrl().equals(firstImage.getUrl())) {
+                        isWin = false;
+                        break outerLoop;
+                    }
+                } else {
                     isWin = false;
-                    break;
+                    break outerLoop;
                 }
             }
-            if (!isWin) break;
         }
 
-        if (isWin) {
-            resultLabel.setText("🎰 Выигрыш! 🎰");
-            resultLabel.setStyle(
-                "-fx-text-fill: #FFD700;" +
-                "-fx-font-size: 22px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-effect: dropshadow(gaussian, black, 3, 0, 1, 1);" +
-                "-fx-background-color: rgba(0, 100, 0, 0.7);" +
-                "-fx-padding: 10;" +
-                "-fx-background-radius: 10;"
-            );
-        } else {
-            resultLabel.setText("💔 Попробуйте еще раз! 💔");
-            resultLabel.setStyle(
-                "-fx-text-fill: #FF6347;" +
-                "-fx-font-size: 18px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-effect: dropshadow(gaussian, black, 3, 0, 1, 1);" +
-                "-fx-background-color: rgba(139, 0, 0, 0.7);" +
-                "-fx-padding: 10;" +
-                "-fx-background-radius: 10;"
-            );
+        if (resultLabel != null) {
+            if (isWin) {
+                resultLabel.setText("🎰 Выигрыш! 🎰");
+                resultLabel.setStyle(
+                    "-fx-text-fill: #FFD700;" +
+                    "-fx-font-size: 22px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-effect: dropshadow(gaussian, black, 3, 0, 1, 1);" +
+                    "-fx-background-color: rgba(0, 100, 0, 0.7);" +
+                    "-fx-padding: 10;" +
+                    "-fx-background-radius: 10;"
+                );
+            } else {
+                resultLabel.setText("💔 Попробуйте еще раз! 💔");
+                resultLabel.setStyle(
+                    "-fx-text-fill: #FF6347;" +
+                    "-fx-font-size: 18px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-effect: dropshadow(gaussian, black, 3, 0, 1, 1);" +
+                    "-fx-background-color: rgba(139, 0, 0, 0.7);" +
+                    "-fx-padding: 10;" +
+                    "-fx-background-radius: 10;"
+                );
+            }
         }
     }
 
     private void updateProbability() {
-        if (gameImages.isEmpty()) {
-            probabilityLabel.setText("Вероятность выигрыша: 0% (нет изображений)");
+        if (usedImages.isEmpty()) {
+            if (probabilityLabel != null) {
+                probabilityLabel.setText("Вероятность выигрыша: 0% (нет изображений)");
+            }
             return;
         }
 
@@ -529,7 +633,9 @@ public class CasinoController {
             rowsProperty.get(),
             symbolCountProperty.get()
         );
-        probabilityLabel.setText(String.format("🎲 Вероятность выигрыша: %.4f%% 🎲", probability * 100));
+        if (probabilityLabel != null) {
+            probabilityLabel.setText(String.format("🎲 Вероятность выигрыша: %.4f%% 🎲", probability * 100));
+        }
     }
 
     private void showAlert(String title, String message) {
