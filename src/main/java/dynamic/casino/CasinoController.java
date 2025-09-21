@@ -310,6 +310,10 @@ public class CasinoController {
 
             if (symbolsToUseField != null && !symbolsToUseField.getText().isEmpty()) {
                 symbolsToUse = Integer.parseInt(symbolsToUseField.getText());
+                if (symbolsToUse < 1 || symbolsToUse > 8) {
+                    showAlert("Ошибка", "Количество фото должно быть от 1 до 8");
+                    return;
+                }
             }
 
             if (newColumns > 0 && newColumns <= 10) {
