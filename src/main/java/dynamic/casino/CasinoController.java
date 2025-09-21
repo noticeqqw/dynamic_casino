@@ -600,7 +600,7 @@ public class CasinoController {
                     "-fx-background-radius: 10;"
                 );
             } else {
-                resultLabel.setText("💔 Попробуйте еще раз! 💔");
+                resultLabel.setText("Попробуйте ещё раз!");
                 resultLabel.setStyle(
                     "-fx-text-fill: #FF6347;" +
                     "-fx-font-size: 18px;" +
