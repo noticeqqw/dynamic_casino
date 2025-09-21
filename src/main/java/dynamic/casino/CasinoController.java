@@ -5,10 +5,12 @@ import javafx.beans.property.*;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.util.Duration;
 
@@ -58,7 +60,7 @@ public class CasinoController {
     private final IntegerProperty symbolsToUseProperty = new SimpleIntegerProperty(0); // Новое свойство
     private final BooleanProperty isSpinningProperty = new SimpleBooleanProperty(false);
 
-    private List<List<ImageView>> reels;
+    private List<VBox> reels;
     private List<List<Image>> reelImages;
 
     // Стратегия генерации случайных чисел
@@ -420,46 +422,43 @@ public class CasinoController {
     }
 
     private VBox createColumn(int colIndex) {
-        VBox column = new VBox(8);
+        VBox column = new VBox();
         column.setAlignment(Pos.CENTER);
-        column.setStyle(
-            "-fx-border-color: #FFD700;" +
-            "-fx-border-width: 3;" +
-            "-fx-padding: 12;" +
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #C0C0C0, #A9A9A9);" +
-            "-fx-background-radius: 8;" +
-            "-fx-border-radius: 8;" +
-            "-fx-effect: dropshadow(gaussian, black, 5, 0, 2, 2);"
-        );
 
-        List<ImageView> columnReels = new ArrayList<>();
+        // Контейнер фиксированного размера (ячейка)
+        Pane slotCell = new Pane();
+        slotCell.setPrefSize(110, 110);
+
+        // Clip, чтобы не выходить за границы квадрата
+        Rectangle clip = new Rectangle(110, 110);
+        slotCell.setClip(clip);
+
+        // VBox, который будет двигаться (наш "барабан")
+        VBox reelBox = new VBox();
+        reelBox.setSpacing(0);
+
+        // Заполняем несколькими картинками подряд (3 шт, чтобы был запас)
         List<Image> columnImages = new ArrayList<>();
-
-        // Создаем ячейки в колонке (только одна строка)
-        for (int row = 0; row < 1; row++) { // Фиксировано 1 строка в колонке
-            ImageView imageView = SymbolFactory.createSymbol(usedImages, rng);
-            imageView.setFitWidth(110);
-            imageView.setFitHeight(110);
-            imageView.setPreserveRatio(false);
-            imageView.setSmooth(true);
-
-            // Устанавливаем случайное изображение
-            if (!usedImages.isEmpty()) {
-                Image randomImage = usedImages.get(rng.nextInt(usedImages.size()));
-                imageView.setImage(randomImage);
-                columnImages.add(randomImage);
-            }
-
-            column.getChildren().add(imageView);
-            columnReels.add(imageView);
+        for (int i = 0; i < 3; i++) {
+            Image randomImage = usedImages.get(rng.nextInt(usedImages.size()));
+            ImageView img = new ImageView(randomImage);
+            img.setFitWidth(110);
+            img.setFitHeight(110);
+            img.setPreserveRatio(false);
+            reelBox.getChildren().add(img);
+            columnImages.add(randomImage);
         }
 
-        // Добавляем колонку в списки
-        reels.add(columnReels);
+        slotCell.getChildren().add(reelBox);
+        column.getChildren().add(slotCell);
+
+        // Сохраняем для доступа
+        reels.add(reelBox);
         reelImages.add(columnImages);
 
         return column;
     }
+
 
     private void executeCommand(Command command) {
         // Проверка состояния перед выполнением команды
@@ -537,42 +536,33 @@ public class CasinoController {
     private void spinColumn(int col) {
         if (col >= reels.size() || col >= reelImages.size()) return;
 
-        List<ImageView> columnReels = reels.get(col);
+        VBox reelBox = reels.get(col);
         List<Image> columnImages = reelImages.get(col);
 
-        // Создаем анимацию смены изображений
-        Timeline spinAnimation = new Timeline();
+        // Анимация смещения на одну картинку вверх
+        TranslateTransition spin = new TranslateTransition(Duration.millis(200), reelBox);
+        spin.setFromY(0);
+        spin.setToY(-110);
+        spin.setInterpolator(Interpolator.LINEAR);
 
-        // Быстрая смена изображений
-        for (int i = 0; i < 15; i++) {
-            KeyFrame kf = new KeyFrame(Duration.millis(i * 80), e -> {
-                for (int row = 0; row < columnReels.size(); row++) {
-                    if (!usedImages.isEmpty()) {
-                        Image newImage = usedImages.get(rng.nextInt(usedImages.size()));
-                        columnReels.get(row).setImage(newImage);
-                        columnImages.set(row, newImage);
-                    }
-                }
-            });
-            spinAnimation.getKeyFrames().add(kf);
-        }
+        spin.setOnFinished(e -> {
+            // Перенос картинки вниз
+            Node first = reelBox.getChildren().remove(0);
+            if (first instanceof ImageView) {
+                ((ImageView) first).setImage(usedImages.get(rng.nextInt(usedImages.size())));
+            }
+            reelBox.getChildren().add(first);
+            reelBox.setTranslateY(0);
 
-        // Замедление в конце
-        for (int i = 0; i < 5; i++) {
-            KeyFrame kf = new KeyFrame(Duration.millis(1200 + i * 150), e -> {
-                for (int row = 0; row < columnReels.size(); row++) {
-                    if (!usedImages.isEmpty()) {
-                        Image newImage = usedImages.get(rng.nextInt(usedImages.size()));
-                        columnReels.get(row).setImage(newImage);
-                        columnImages.set(row, newImage);
-                    }
-                }
-            });
-            spinAnimation.getKeyFrames().add(kf);
-        }
+            // Продолжение вращения
+            if (currentState == GameState.SPINNING) {
+                spinColumn(col);
+            }
+        });
 
-        spinAnimation.play();
+        spin.play();
     }
+
 
     private void checkWin() {
         if (columnsProperty.get() == 0 || usedImages.isEmpty()) return;
