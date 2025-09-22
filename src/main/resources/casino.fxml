@@ -26,6 +26,12 @@
                         <Label text="Количество фото:" />
                         <TextField fx:id="symbolsToUseField" promptText="0" text="0" />
 
+                        <Label text="Скорость прокрутки (0.01-10):" />
+                        <TextField fx:id="spinSpeedField" promptText="1.0" text="1.0" />
+
+                        <Label text="Длительность симуляции (сек):" />
+                        <TextField fx:id="simulationSpeedField" promptText="3.0" text="3.0" />
+
                         <Button fx:id="applySettingsButton" mnemonicParsing="false" text="Применить настройки" />
 
                         <Separator />
