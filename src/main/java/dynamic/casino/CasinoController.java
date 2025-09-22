@@ -556,13 +556,10 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
         stopTimeline.play();
     }
 
-    // 🔥 Асинхронное ожидание завершения анимаций — БЕЗ БЛОКИРОВКИ UI
     private void waitForAnimationsToFinish() {
         if (activeAnimations.get() == 0) {
-            // Все анимации завершены — можно проверять результат
             Platform.runLater(this::showFinalResult);
         } else {
-            // Ждём ещё 20 мс и проверяем снова
             PauseTransition wait = new PauseTransition(Duration.millis(20));
             wait.setOnFinished(e -> waitForAnimationsToFinish());
             wait.play();
@@ -572,7 +569,7 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
     // Показываем результат, когда всё готово
     private void showFinalResult() {
         try {
-            checkWin(); // ← Теперь данные стабильны!
+            checkWin();
         } catch (Exception ex) {
             ex.printStackTrace();
             showAlert("Ошибка", "Во время подсчёта результата произошла ошибка:\n" + ex.getMessage());
@@ -597,7 +594,6 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
     private void spinColumn(int col, long stepDurationMs, long totalSimulationMs) {
         if (col >= reels.size() || col >= reelSymbolIndices.size()) return;
 
-        // 🔥 Увеличиваем счётчик активных анимаций
         activeAnimations.incrementAndGet();
 
         VBox reelBox = reels.get(col);
@@ -622,7 +618,6 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
                         if (!indices.isEmpty()) {
                             indices.remove(0);
                             indices.add(newIndex);
-                            System.out.println("Обновлена колонка " + col + ": новый индекс = " + newIndex);
                         }
                     }
                 }
@@ -630,7 +625,6 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
                 reelBox.getChildren().add(first);
                 reelBox.setTranslateY(0);
             } finally {
-                // 🔥 Уменьшаем счётчик — анимация этого шага завершена
                 activeAnimations.decrementAndGet();
             }
 
@@ -638,7 +632,6 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
             if (currentState == GameState.SPINNING) {
                 spinColumn(col, stepDurationMs, totalSimulationMs);
             } else {
-                System.out.println("Анимация колонки " + col + " остановлена — игра завершена");
             }
         });
 
@@ -648,12 +641,8 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
 
     private void checkWin() {
         if (columnsProperty.get() == 0 || usedImages.isEmpty() || reelSymbolIndices == null) {
-            System.out.println("checkWin: нет данных для проверки");
             return;
         }
-
-        System.out.println("\n=== НАЧАЛО ПРОВЕРКИ ВЫИГРЫША ===");
-        System.out.println("Количество колонок: " + columnsProperty.get());
 
         boolean isWin = false;
 
@@ -668,19 +657,15 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
                 // Выводим URL изображения для проверки
                 if (topIndex < usedImages.size()) {
                     String imgUrl = usedImages.get(topIndex).getUrl();
-                    System.out.println("Колонка " + col + ": индекс=" + topIndex + " | URL=" + imgUrl);
                 } else {
-                    System.out.println("Колонка " + col + ": индекс=" + topIndex + " | URL=НЕДОПУСТИМЫЙ ИНДЕКС");
                 }
             } else {
-                System.out.println("Колонка " + col + ": данные отсутствуют");
             }
         }
 
         // Для 2 колонок: выигрыш, если индексы совпадают
         if (columnsProperty.get() == 2 && topIndices.size() == 2) {
             isWin = (topIndices.get(0).equals(topIndices.get(1)));
-            System.out.println("Сравнение: " + topIndices.get(0) + " == " + topIndices.get(1) + " → " + isWin);
         }
         // Для 3+ колонок: все должны совпадать
         else if (topIndices.size() >= 2) {
@@ -692,11 +677,7 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
                     break;
                 }
             }
-            System.out.println("Все совпадают с первым (" + first + ") → " + isWin);
         }
-
-        System.out.println("ИТОГ: " + (isWin ? "ВЫИГРЫШ 🎰" : "проигрыш"));
-        System.out.println("=== КОНЕЦ ПРОВЕРКИ ===\n");
 
         // Отображаем результат
         if (resultLabel != null) {
@@ -735,9 +716,7 @@ PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
             if (!seenUrls.contains(url)) {
                 seenUrls.add(url);
                 uniqueImages.add(img);
-                System.out.println("Загружено: " + url);
             } else {
-                System.out.println("Пропущен дубликат: " + url);
             }
         }
 
