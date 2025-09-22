@@ -11,12 +11,13 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
 import javafx.util.Duration;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
+
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class CasinoController {
 
@@ -30,7 +31,7 @@ public class CasinoController {
     private TextField columnsField;
 
     @FXML
-    private TextField symbolsToUseField; // Новое поле для выбора количества символов
+    private TextField symbolsToUseField;
 
     @FXML
     private Button startButton;
@@ -53,28 +54,23 @@ public class CasinoController {
     @FXML
     private Label statusLabel;
 
-    // Свойства для паттерна Observer/Bindings
     private final IntegerProperty columnsProperty = new SimpleIntegerProperty(3);
     private final IntegerProperty rowsProperty = new SimpleIntegerProperty(1);
     private final IntegerProperty symbolCountProperty = new SimpleIntegerProperty(0);
-    private final IntegerProperty symbolsToUseProperty = new SimpleIntegerProperty(0); // Новое свойство
+    private final IntegerProperty symbolsToUseProperty = new SimpleIntegerProperty(0);
     private final BooleanProperty isSpinningProperty = new SimpleBooleanProperty(false);
 
     private List<VBox> reels;
     private List<List<Image>> reelImages;
 
-    // Стратегия генерации случайных чисел
     private RandomNumberGenerator rng = new DefaultRandomGenerator();
 
-    // Стратегия расчета вероятности
     private ProbabilityCalculator probabilityCalculator = new DefaultProbabilityCalculator();
 
-    // Список изображений для использования
     private List<Image> gameImages = new ArrayList<>();
-    private List<Image> usedImages = new ArrayList<>(); // Новый список для используемых изображений
-    private String imagesDirectory = "images"; // Директория с изображениями
+    private List<Image> usedImages = new ArrayList<>();
+    private String imagesDirectory = "images";
 
-    // Состояние автомата
     private GameState currentState = GameState.IDLE;
 
     @FXML
@@ -83,19 +79,18 @@ public class CasinoController {
         setupBindings();
         createGameArea();
         setupEventHandlers();
-        loadDefaultImages(); // Загружаем изображения при запуске
+        loadDefaultImages();
         applyCasinoStyle();
     }
 
     private void setupSettingsPanel() {
         columnsField.setText(String.valueOf(columnsProperty.get()));
         if (symbolsToUseField != null) {
-            symbolsToUseField.setText("0"); // По умолчанию использовать все изображения
+            symbolsToUseField.setText("0");
         }
     }
 
     private void setupBindings() {
-        // Биндинги для автоматического обновления UI
         columnsProperty.addListener((obs, oldVal, newVal) -> {
             if (columnsField != null) {
                 columnsField.setText(String.valueOf(newVal.intValue()));
@@ -106,13 +101,14 @@ public class CasinoController {
 
         symbolCountProperty.addListener((obs, oldVal, newVal) -> updateProbability());
         rowsProperty.addListener((obs, oldVal, newVal) -> updateProbability());
-        isSpinningProperty.addListener((obs, oldVal, newVal) -> {
-            if (startButton != null) {
-                startButton.setDisable(newVal.booleanValue());
-            }
-        });
+        if (startButton != null) {
+            BooleanBinding noImagesOrNoColumns = Bindings.createBooleanBinding(
+                () -> symbolCountProperty.get() <= 0 || columnsProperty.get() <= 0,
+                symbolCountProperty, columnsProperty
+            );
+            startButton.disableProperty().bind(isSpinningProperty.or(noImagesOrNoColumns));
+        }
 
-        // Добавляем слушатель для symbolsToUseProperty
         symbolsToUseProperty.addListener((obs, oldVal, newVal) -> updateUsedImages());
     }
 
@@ -129,12 +125,10 @@ public class CasinoController {
     }
 
     private void applyCasinoStyle() {
-        // Основной фон казино
         if (mainContainer != null) {
             mainContainer.setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #8B0000, #dc143c);");
         }
 
-        // Панель настроек в стиле казино
         if (settingsPanel != null) {
             settingsPanel.setStyle(
                 "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #DAA520, #B8860B);" +
@@ -146,7 +140,6 @@ public class CasinoController {
             );
         }
 
-        // Стиль для кнопок казино
         String buttonStyle =
             "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #32CD32, #228B22);" +
             "-fx-text-fill: white;" +
@@ -176,7 +169,6 @@ public class CasinoController {
             );
         }
 
-        // Стиль для текстовых полей
         String textFieldStyle =
             "-fx-background-color: white;" +
             "-fx-border-color: #DAA520;" +
@@ -191,7 +183,6 @@ public class CasinoController {
             symbolsToUseField.setStyle(textFieldStyle);
         }
 
-        // Стиль для меток
         if (statusLabel != null) {
             statusLabel.setStyle(
                 "-fx-text-fill: #000080;" +
@@ -227,7 +218,6 @@ public class CasinoController {
     private void loadDefaultImages() {
         gameImages.clear();
 
-        // Проверяем существование директории images
         File imagesDir = new File(imagesDirectory);
         if (!imagesDir.exists()) {
             imagesDir.mkdirs();
@@ -263,7 +253,6 @@ public class CasinoController {
             return;
         }
 
-        // Загружаем изображения
         for (File imageFile : imageFiles) {
             try {
                 Image image = new Image(imageFile.toURI().toString());
@@ -282,11 +271,11 @@ public class CasinoController {
             }
         } else {
             symbolCountProperty.set(gameImages.size());
-            updateUsedImages(); // Обновляем список используемых изображений
+            updateUsedImages();
             if (statusLabel != null) {
                 statusLabel.setText("Загружено изображений: " + gameImages.size());
             }
-            createGameArea(); // Пересоздаем игровую область с новыми изображениями
+            createGameArea();
         }
     }
 
@@ -294,14 +283,10 @@ public class CasinoController {
         int symbolsToUse = symbolsToUseProperty.get();
 
         if (symbolsToUse <= 0 || symbolsToUse >= gameImages.size()) {
-            // Использовать все изображения
             usedImages = new ArrayList<>(gameImages);
         } else {
-            // Использовать только указанное количество изображений
             usedImages = new ArrayList<>(gameImages.subList(0, Math.min(symbolsToUse, gameImages.size())));
         }
-
-        // Обновляем свойство количества символов
         symbolCountProperty.set(usedImages.size());
     }
 
@@ -331,15 +316,13 @@ public class CasinoController {
     }
 
     private void updateRowsBasedOnColumns(int columns) {
-        // При C ≤ 5 — 1 ряд, при C > 5 — 2 ряда
         int rows = (columns <= 5) ? 1 : 2;
         rowsProperty.set(rows);
     }
 
     private void createGameArea() {
-        // Проверка состояния
         if (currentState == GameState.SPINNING) {
-            return; // Нельзя изменять игровое поле во время спина
+            return;
         }
 
         if (gameArea != null) {
@@ -367,14 +350,11 @@ public class CasinoController {
         }
 
         if (gameArea != null) {
-            // Создаем контейнер для барабанов с адаптивной сеткой
             GridPane reelsContainer = new GridPane();
             reelsContainer.setAlignment(Pos.CENTER);
             reelsContainer.setHgap(15);
             reelsContainer.setVgap(15);
             reelsContainer.setPadding(new Insets(30));
-
-            // Стиль игрового поля казино
             reelsContainer.setStyle(
                 "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #006400, #008000);" +
                 "-fx-border-color: #FFD700;" +
@@ -384,30 +364,26 @@ public class CasinoController {
                 "-fx-effect: dropshadow(gaussian, black, 10, 0, 3, 3);"
             );
 
-            // Определяем количество рядов в зависимости от количества колонок
             int totalColumns = columnsProperty.get();
             int topRowColumns, bottomRowColumns;
 
             if (totalColumns <= 5) {
-                // Одна строка
+
                 topRowColumns = totalColumns;
                 bottomRowColumns = 0;
             } else {
-                // Две строки
+
                 topRowColumns = (int) Math.ceil(totalColumns / 2.0);
                 bottomRowColumns = totalColumns - topRowColumns;
             }
 
             int columnIndex = 0;
-
-            // Создаем верхний ряд
             for (int col = 0; col < topRowColumns; col++) {
                 VBox column = createColumn(columnIndex);
                 reelsContainer.add(column, col, 0);
                 columnIndex++;
             }
 
-            // Создаем нижний ряд (если нужно)
             if (bottomRowColumns > 0) {
                 for (int col = 0; col < bottomRowColumns; col++) {
                     VBox column = createColumn(columnIndex);
@@ -425,19 +401,14 @@ public class CasinoController {
         VBox column = new VBox();
         column.setAlignment(Pos.CENTER);
 
-        // Контейнер фиксированного размера (ячейка)
         Pane slotCell = new Pane();
         slotCell.setPrefSize(110, 110);
 
-        // Clip, чтобы не выходить за границы квадрата
         Rectangle clip = new Rectangle(110, 110);
         slotCell.setClip(clip);
-
-        // VBox, который будет двигаться (наш "барабан")
         VBox reelBox = new VBox();
         reelBox.setSpacing(0);
 
-        // Заполняем несколькими картинками подряд (3 шт, чтобы был запас)
         List<Image> columnImages = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             Image randomImage = usedImages.get(rng.nextInt(usedImages.size()));
@@ -451,8 +422,6 @@ public class CasinoController {
 
         slotCell.getChildren().add(reelBox);
         column.getChildren().add(slotCell);
-
-        // Сохраняем для доступа
         reels.add(reelBox);
         reelImages.add(columnImages);
 
@@ -461,13 +430,11 @@ public class CasinoController {
 
 
     private void executeCommand(Command command) {
-        // Проверка состояния перед выполнением команды
         if (command.canExecute(currentState)) {
             command.execute();
         }
     }
 
-    // Команда запуска прокрутки
     private class StartSpinCommand implements Command {
         @Override
         public void execute() {
@@ -488,8 +455,6 @@ public class CasinoController {
         if (resultLabel != null) {
             resultLabel.setText("");
         }
-
-        // Добавляем эффект начала игры
         if (startButton != null) {
             startButton.setStyle(
                 "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #808080, #696969);" +
@@ -502,8 +467,6 @@ public class CasinoController {
                 "-fx-background-radius: 5;"
             );
         }
-
-        // Запускаем анимацию для каждой колонки с разной задержкой
         for (int col = 0; col < columnsProperty.get(); col++) {
             int finalCol = col;
             PauseTransition delay = new PauseTransition(Duration.millis(col * 300));
@@ -511,25 +474,33 @@ public class CasinoController {
             delay.play();
         }
 
-        // После завершения всех анимаций проверяем результат
-        Timeline checkResult = new Timeline(new KeyFrame(Duration.millis(columnsProperty.get() * 300 + 2000), e -> {
-            checkWin();
-            currentState = GameState.IDLE;
-            isSpinningProperty.set(false);
-            // Возвращаем стиль кнопки
-            if (startButton != null) {
-                startButton.setStyle(
-                    "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FF4500, #DC143C);" +
-                    "-fx-text-fill: white;" +
-                    "-fx-font-weight: bold;" +
-                    "-fx-font-size: 16px;" +
-                    "-fx-border-color: #8B0000;" +
-                    "-fx-border-width: 2;" +
-                    "-fx-border-radius: 5;" +
-                    "-fx-background-radius: 5;"
-                );
+        Timeline checkResult = new Timeline(new KeyFrame(
+            Duration.millis(columnsProperty.get() * 300 + 2000),
+            e -> {
+                try {
+                    checkWin();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    showAlert("Ошибка", "Во время подсчёта результата произошла ошибка:\n" + ex.getMessage());
+                } finally {
+                    currentState = GameState.IDLE;
+                    isSpinningProperty.set(false);
+
+                    if (startButton != null) {
+                        startButton.setStyle(
+                            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FF4500, #DC143C);" +
+                            "-fx-text-fill: white;" +
+                            "-fx-font-weight: bold;" +
+                            "-fx-font-size: 16px;" +
+                            "-fx-border-color: #8B0000;" +
+                            "-fx-border-width: 2;" +
+                            "-fx-border-radius: 5;" +
+                            "-fx-background-radius: 5;"
+                        );
+                    }
+                }
             }
-        }));
+        ));
         checkResult.play();
     }
 
@@ -538,15 +509,12 @@ public class CasinoController {
 
         VBox reelBox = reels.get(col);
         List<Image> columnImages = reelImages.get(col);
-
-        // Анимация смещения на одну картинку вверх
         TranslateTransition spin = new TranslateTransition(Duration.millis(200), reelBox);
         spin.setFromY(0);
         spin.setToY(-110);
         spin.setInterpolator(Interpolator.LINEAR);
 
         spin.setOnFinished(e -> {
-            // Перенос картинки вниз
             Node first = reelBox.getChildren().remove(0);
             if (first instanceof ImageView) {
                 ((ImageView) first).setImage(usedImages.get(rng.nextInt(usedImages.size())));
@@ -554,7 +522,6 @@ public class CasinoController {
             reelBox.getChildren().add(first);
             reelBox.setTranslateY(0);
 
-            // Продолжение вращения
             if (currentState == GameState.SPINNING) {
                 spinColumn(col);
             }
@@ -569,11 +536,9 @@ public class CasinoController {
 
         boolean isWin = true;
         Image firstImage = reelImages.get(0).get(0);
-
-        // Проверяем все изображения на совпадение
         outerLoop:
         for (int col = 0; col < columnsProperty.get(); col++) {
-            for (int row = 0; row < 1; row++) { // Фиксировано 1 строка
+            for (int row = 0; row < 1; row++) {
                 if (col < reelImages.size() && row < reelImages.get(col).size()) {
                     Image currentImage = reelImages.get(col).get(row);
                     if (!currentImage.getUrl().equals(firstImage.getUrl())) {
@@ -637,8 +602,6 @@ public class CasinoController {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-
-        // Стиль для диалогового окна
         DialogPane dialogPane = alert.getDialogPane();
         dialogPane.setStyle(
             "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #DAA520, #B8860B);" +
