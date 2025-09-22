@@ -1,0 +1,175 @@
+@startuml
+' Основные интерфейсы
+interface Command {
+  + execute()
+  + canExecute(GameState): boolean
+}
+
+interface RandomNumberGenerator {
+  + nextInt(bound: int): int
+  + nextDouble(): double
+}
+
+interface ProbabilityCalculator {
+  + calculateWinProbability(columns: int, rows: int, symbolCount: int): double
+}
+
+' Перечисления
+enum GameState {
+  IDLE
+  SPINNING
+  STOPPING
+}
+
+' Реализации интерфейсов
+class DefaultRandomGenerator {
+  + nextInt(bound: int): int
+  + nextDouble(): double
+}
+
+class DefaultProbabilityCalculator {
+  + calculateWinProbability(columns: int, rows: int, symbolCount: int): double
+}
+
+' FXML файл (специальный элемент)
+class casino.fxml {
+  -- содержит --
+  VBox mainContainer
+  VBox settingsPanel
+  TextField columnsField
+  TextField symbolsToUseField
+  TextField spinSpeedField
+  TextField simulationSpeedField
+  Button startButton
+  Button applySettingsButton
+  Button loadImagesButton
+  VBox gameArea
+  Label probabilityLabel
+  Label resultLabel
+  Label statusLabel
+}
+
+' Главный контроллер
+class CasinoController {
+  -- FXML инъекции --
+  - mainContainer: VBox
+  - settingsPanel: VBox
+  - columnsField: TextField
+  - symbolsToUseField: TextField
+  - spinSpeedField: TextField
+  - simulationSpeedField: TextField
+  - startButton: Button
+  - applySettingsButton: Button
+  - loadImagesButton: Button
+  - gameArea: VBox
+  - probabilityLabel: Label
+  - resultLabel: Label
+  - statusLabel: Label
+  
+  -- Свойства --
+  - columnsProperty: IntegerProperty
+  - rowsProperty: IntegerProperty
+  - symbolCountProperty: IntegerProperty
+  - symbolsToUseProperty: IntegerProperty
+  - spinSpeedProperty: DoubleProperty
+  - simulationSpeedProperty: DoubleProperty
+  - isSpinningProperty: BooleanProperty
+  - activeAnimations: AtomicInteger
+  
+  -- Коллекции --
+  - reels: List<VBox>
+  - reelSymbolIndices: List<List<Integer>>
+  - gameImages: List<Image>
+  - usedImages: List<Image>
+  
+  -- Зависимости --
+  - rng: RandomNumberGenerator
+  - probabilityCalculator: ProbabilityCalculator
+  - currentState: GameState
+  
+  -- Основные методы --
+  + initialize()
+  - setupSettingsPanel()
+  - setupBindings()
+  - createGameArea()
+  - setupEventHandlers()
+  - loadDefaultImages()
+  - applyCasinoStyle()
+  - loadImagesFromDirectory()
+  - applySettings()
+  - startSpin()
+  - spinColumn(col: int, stepDurationMs: long, totalSimulationMs: long)
+  - checkWin()
+  - updateProbability()
+  - executeCommand(command: Command)
+}
+
+' Внутренний класс команды
+class StartSpinCommand {
+  + execute()
+  + canExecute(currentState: GameState): boolean
+}
+
+' Вспомогательный класс
+class SymbolFactory {
+  + createSymbol(gameImages: List<Image>, rng: RandomNumberGenerator): ImageView
+  + createSymbol(gameImages: List<Image>, rng: RandomNumberGenerator, fitWidth: double, fitHeight: double): ImageView
+}
+
+' Класс запуска приложения
+class Main {
+  + start(primaryStage: Stage)
+  + main(args: String[])
+}
+
+' Связи между классами
+CasinoController ..|> Command : реализует (внутренний класс)
+CasinoController ..> casino.fxml : использует FXML
+CasinoController ..> GameState : использует
+CasinoController ..> RandomNumberGenerator : зависит от
+CasinoController ..> ProbabilityCalculator : зависит от
+CasinoController ..> StartSpinCommand : содержит
+
+DefaultRandomGenerator ..|> RandomNumberGenerator : реализует
+DefaultProbabilityCalculator ..|> ProbabilityCalculator : реализует
+
+Main --> CasinoController : создает через FXMLLoader
+Main --> casino.fxml : загружает
+
+SymbolFactory ..> RandomNumberGenerator : использует
+CasinoController ..> SymbolFactory : использует
+
+' Зависимости от JavaFX
+CasinoController --> "JavaFX" VBox
+CasinoController --> "JavaFX" TextField
+CasinoController --> "JavaFX" Button
+CasinoController --> "JavaFX" Label
+CasinoController --> "JavaFX" Image
+CasinoController --> "JavaFX" ImageView
+CasinoController --> "JavaFX" Animation
+CasinoController --> "JavaFX" Property
+
+' Note для объяснения архитектуры
+note top of CasinoController
+  Архитектура MVC:
+  - casino.fxml - View (Представление)
+  - CasinoController - Controller (Контроллер)
+  - GameState, Command - Model (Модель)
+  
+  Паттерны:
+  - Command для инкапсуляции действий
+  - Strategy для генерации и расчетов
+  - Observer для свойств JavaFX
+  - State через GameState
+end note
+
+note right of casino.fxml
+  FXML файл определяет:
+  - Структуру интерфейса
+  - Расположение элементов
+  - Начальные значения
+  - Связь с контроллером
+  через fx:controller
+end note
+
+@enduml
