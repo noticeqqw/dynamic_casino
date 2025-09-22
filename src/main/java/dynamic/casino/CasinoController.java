@@ -536,7 +536,8 @@ public class CasinoController {
         // Запускаем все барабаны одновременно
         for (int col = 0; col < columnsProperty.get(); col++) {
             int finalCol = col;
-            PauseTransition delay = new PauseTransition(Duration.millis(0));
+            long delayMs = (long) (col * (totalSimulationMs / (double) columnsProperty.get() / 4.0));
+PauseTransition delay = new PauseTransition(Duration.millis(delayMs));
             delay.setOnFinished(e -> spinColumn(finalCol, stepDurationMs, totalSimulationMs));
             delay.play();
         }
